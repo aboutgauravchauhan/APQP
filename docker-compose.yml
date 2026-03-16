@@ -1,0 +1,91 @@
+version: '3.9'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: apqp-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: apqp_db
+      POSTGRES_USER: apqp_user
+      POSTGRES_PASSWORD: apqp_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U apqp_user -d apqp_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MinIO (S3 compatible document storage)
+  minio:
+    image: minio/minio:latest
+    container_name: apqp-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: apqp_admin
+      MINIO_ROOT_PASSWORD: apqp_minio_pass
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # Spring Boot Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: apqp-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/apqp_db
+      DB_USERNAME: apqp_user
+      DB_PASSWORD: apqp_pass
+      JWT_SECRET: apqp-super-secret-key-change-in-production-must-be-256-bits-long
+      JWT_EXPIRATION: 86400000
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET: apqp-documents
+      AWS_ACCESS_KEY: apqp_admin
+      AWS_SECRET_KEY: apqp_minio_pass
+      AWS_REGION: us-east-1
+      LOG_LEVEL: INFO
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Angular Frontend (Nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: apqp-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    environment:
+      API_URL: http://backend:8080
+
+volumes:
+  postgres_data:
+    driver: local
+  minio_data:
+    driver: local
