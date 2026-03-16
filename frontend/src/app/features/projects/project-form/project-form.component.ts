@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -10,12 +10,13 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { ApiService } from '../../../core/services/api.service';
+import { Customer } from '../../../core/models';
 
 @Component({
   selector: 'app-project-form',
   standalone: true,
   imports: [
-    CommonModule, ReactiveFormsModule,
+    CommonModule, ReactiveFormsModule, RouterLink,
     MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonModule,
     MatIconModule, MatDatepickerModule, MatNativeDateModule
   ],
@@ -23,12 +24,15 @@ import { ApiService } from '../../../core/services/api.service';
     <div class="page-header">
       <div>
         <div class="page-title">{{ isEdit ? 'Edit Program' : 'New Program' }}</div>
-        <div class="page-subtitle">{{ isEdit ? 'Update program details' : 'Create a new development program' }}</div>
+        <div class="page-subtitle">
+          {{ isEdit ? 'Update program details' : 'Program code will be auto-generated as PROG-{CUSTOMER}-{YEAR}-{SEQ}' }}
+        </div>
       </div>
     </div>
 
     <div class="card" style="max-width: 900px">
       <form [formGroup]="form" (ngSubmit)="submit()">
+
         <h3 class="section-title">Program Information</h3>
         <div class="grid-2">
           <mat-form-field appearance="outline">
@@ -47,8 +51,16 @@ import { ApiService } from '../../../core/services/api.service';
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Customer ID *</mat-label>
-            <input matInput type="number" formControlName="customerId" placeholder="Customer ID">
+            <mat-label>Customer *</mat-label>
+            <mat-select formControlName="customerId">
+              <mat-option *ngFor="let c of customers()" [value]="c.id">
+                {{ c.customerName }}
+                <span style="color: #999; font-size: 0.8em"> ({{ c.customerCode }})</span>
+              </mat-option>
+            </mat-select>
+            <mat-hint>
+              <a routerLink="/masters/customers" style="color: var(--color-primary); font-size: 0.8em">+ Add Customer in Masters</a>
+            </mat-hint>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
@@ -83,13 +95,6 @@ import { ApiService } from '../../../core/services/api.service';
         <h3 class="section-title">Timeline & Volume</h3>
         <div class="grid-3">
           <mat-form-field appearance="outline">
-            <mat-label>SOP Date</mat-label>
-            <input matInput [matDatepicker]="sopPicker" formControlName="sopDate">
-            <mat-datepicker-toggle matSuffix [for]="sopPicker"></mat-datepicker-toggle>
-            <mat-datepicker #sopPicker></mat-datepicker>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
             <mat-label>Sample Date</mat-label>
             <input matInput [matDatepicker]="samplePicker" formControlName="sampleDate">
             <mat-datepicker-toggle matSuffix [for]="samplePicker"></mat-datepicker-toggle>
@@ -97,8 +102,27 @@ import { ApiService } from '../../../core/services/api.service';
           </mat-form-field>
 
           <mat-form-field appearance="outline">
+            <mat-label>SOS Date</mat-label>
+            <input matInput [matDatepicker]="sosPicker" formControlName="sosDate">
+            <mat-datepicker-toggle matSuffix [for]="sosPicker"></mat-datepicker-toggle>
+            <mat-datepicker #sosPicker></mat-datepicker>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>SOP Date</mat-label>
+            <input matInput [matDatepicker]="sopPicker" formControlName="sopDate">
+            <mat-datepicker-toggle matSuffix [for]="sopPicker"></mat-datepicker-toggle>
+            <mat-datepicker #sopPicker></mat-datepicker>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
             <mat-label>Annual Volume</mat-label>
             <input matInput type="number" formControlName="annualVolume">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Daily Volume</mat-label>
+            <input matInput type="number" formControlName="dailyVolume">
           </mat-form-field>
         </div>
 
@@ -135,25 +159,29 @@ export class ProjectFormComponent implements OnInit {
 
   isEdit = false;
   saving = signal(false);
+  customers = signal<Customer[]>([]);
 
   form = this.fb.group({
     projectName: ['', Validators.required],
-    customerId: [null, Validators.required],
-    plantId: [null, Validators.required],
+    customerId: [null as number | null, Validators.required],
+    plantId: [1 as number | null, Validators.required],
     projectType: ['NEW_DEVELOPMENT', Validators.required],
     vehicleName: [''],
     vehiclePlatform: [''],
     modelName: [''],
     customerPartNo: [''],
     internalPartNo: [''],
-    sopDate: [null],
-    sampleDate: [null],
-    annualVolume: [null],
-    dailyVolume: [null],
-    projectManagerId: [null]
+    sopDate: [null as Date | null],
+    sampleDate: [null as Date | null],
+    sosDate: [null as Date | null],
+    annualVolume: [null as number | null],
+    dailyVolume: [null as number | null],
+    projectManagerId: [null as number | null]
   });
 
   ngOnInit() {
+    this.api.getActiveCustomers().subscribe(list => this.customers.set(list));
+
     const id = this.route.snapshot.params['id'];
     if (id) {
       this.isEdit = true;

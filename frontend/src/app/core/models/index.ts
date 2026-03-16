@@ -235,3 +235,83 @@ export interface User {
   plantId: number;
   departmentId: number;
 }
+
+export interface Customer {
+  id: number;
+  customerCode: string;
+  customerName: string;
+  oemType?: string;
+  location?: string;
+  country?: string;
+  contactPerson?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  active: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Contact {
+  id: number;
+  firstName: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  jobTitle?: string;
+  department?: string;
+  customerId?: number;
+  vendorId?: number;
+  primary: boolean;
+  active: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ProgramTeamMember {
+  id: number;
+  projectId: number;
+  userId: number;
+  cftRole: string;
+  programManager: boolean;
+  createdAt?: string;
+  // enriched
+  userName?: string;
+  userEmail?: string;
+}
+
+export interface ProgramMilestone {
+  id?: number;
+  projectId?: number;
+  milestoneName: string;
+  milestoneType: string;
+  plannedDate?: string;
+  actualDate?: string;
+  status: string;
+  ownerUserId?: number;
+  notes?: string;
+  sequenceNo: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ProgramCustomerRep {
+  id: number;
+  projectId: number;
+  contactId: number;
+  repRole?: string;
+  primary: boolean;
+  createdAt?: string;
+  // enriched
+  contactName?: string;
+  contactEmail?: string;
+}
+
+export interface ModulePermission {
+  id: number;
+  roleCode: string;
+  module: string;
+  canView: boolean;
+  canCreate: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
+}

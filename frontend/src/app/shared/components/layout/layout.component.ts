@@ -10,6 +10,12 @@ interface NavItem {
   icon: string;
   route: string;
   badge?: number;
+  group?: string;
+}
+
+interface NavGroup {
+  label: string;
+  items: NavItem[];
 }
 
 @Component({
@@ -31,16 +37,19 @@ interface NavItem {
         </div>
 
         <nav class="sidebar-nav">
-          <a *ngFor="let item of navItems"
-             [routerLink]="item.route"
-             routerLinkActive="active"
-             class="nav-item"
-             [matTooltip]="sidebarCollapsed() ? item.label : ''"
-             matTooltipPosition="right">
-            <mat-icon class="nav-icon">{{ item.icon }}</mat-icon>
-            <span class="nav-label" *ngIf="!sidebarCollapsed()">{{ item.label }}</span>
-            <span class="nav-badge" *ngIf="item.badge && !sidebarCollapsed()">{{ item.badge }}</span>
-          </a>
+          <ng-container *ngFor="let group of navGroups">
+            <div class="nav-group-label" *ngIf="!sidebarCollapsed()">{{ group.label }}</div>
+            <a *ngFor="let item of group.items"
+               [routerLink]="item.route"
+               routerLinkActive="active"
+               class="nav-item"
+               [matTooltip]="sidebarCollapsed() ? item.label : ''"
+               matTooltipPosition="right">
+              <mat-icon class="nav-icon">{{ item.icon }}</mat-icon>
+              <span class="nav-label" *ngIf="!sidebarCollapsed()">{{ item.label }}</span>
+              <span class="nav-badge" *ngIf="item.badge && !sidebarCollapsed()">{{ item.badge }}</span>
+            </a>
+          </ng-container>
         </nav>
 
         <div class="sidebar-footer" *ngIf="!sidebarCollapsed()">
@@ -148,6 +157,15 @@ interface NavItem {
       &.active { background: rgba(255,255,255,0.12); color: white; border-left-color: #f97316; }
     }
 
+    .nav-group-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.35);
+      text-transform: uppercase;
+      padding: 12px 16px 4px;
+    }
+
     .nav-icon { font-size: 20px; flex-shrink: 0; }
     .nav-label { font-size: 0.875rem; font-weight: 500; flex: 1; }
     .nav-badge {
@@ -225,14 +243,38 @@ export class LayoutComponent {
   auth = inject(AuthService);
   sidebarCollapsed = signal(false);
 
-  navItems: NavItem[] = [
-    { label: 'Dashboard',   icon: 'dashboard',          route: '/dashboard' },
-    { label: 'Projects',    icon: 'folder_open',         route: '/projects' },
-    { label: 'BOM Studio',  icon: 'account_tree',        route: '/bom' },
-    { label: 'APQP',        icon: 'timeline',            route: '/apqp' },
-    { label: 'ECN',         icon: 'change_circle',       route: '/ecn' },
-    { label: 'PPAP',        icon: 'verified',            route: '/ppap' },
-    { label: 'Vendors',     icon: 'factory',             route: '/vendors' },
+  navGroups: NavGroup[] = [
+    {
+      label: 'Overview',
+      items: [
+        { label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
+      ]
+    },
+    {
+      label: 'Programs',
+      items: [
+        { label: 'Projects',   icon: 'folder_open',  route: '/projects' },
+        { label: 'BOM Studio', icon: 'account_tree', route: '/bom' },
+        { label: 'APQP',       icon: 'timeline',     route: '/apqp' },
+        { label: 'ECN',        icon: 'change_circle',route: '/ecn' },
+        { label: 'PPAP',       icon: 'verified',     route: '/ppap' },
+      ]
+    },
+    {
+      label: 'Masters',
+      items: [
+        { label: 'Customers',  icon: 'business',  route: '/masters/customers' },
+        { label: 'Vendors',    icon: 'factory',   route: '/vendors' },
+        { label: 'Employees',  icon: 'people',    route: '/masters/employees' },
+        { label: 'Contacts',   icon: 'contacts',  route: '/masters/contacts' },
+      ]
+    },
+    {
+      label: 'Settings',
+      items: [
+        { label: 'Permissions', icon: 'admin_panel_settings', route: '/settings/permissions' },
+      ]
+    }
   ];
 
   toggleSidebar() {

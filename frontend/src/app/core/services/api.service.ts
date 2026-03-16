@@ -5,7 +5,8 @@ import { environment } from '../../environments/environment';
 import {
   Project, Part, BomTreeNode, ApqpPhase, ProjectApqpTask,
   ChangeRequest, EcnImpactedObject, PpapPackage, Vendor,
-  DashboardSummary, PageResponse
+  DashboardSummary, PageResponse, Customer, Contact,
+  ProgramTeamMember, ProgramMilestone, ProgramCustomerRep, ModulePermission
 } from '../models';
 
 @Injectable({ providedIn: 'root' })
@@ -164,5 +165,119 @@ export class ApiService {
     return this.http.patch<Vendor>(`${this.base}/vendors/${id}/approval`, null, {
       params: new HttpParams().set('approvalStatus', approvalStatus)
     });
+  }
+
+  // ---- Customers ----
+  getCustomers(page = 0, size = 50): Observable<PageResponse<Customer>> {
+    const params = new HttpParams().set('page', page).set('size', size);
+    return this.http.get<PageResponse<Customer>>(`${this.base}/customers`, { params });
+  }
+
+  getActiveCustomers(): Observable<Customer[]> {
+    return this.http.get<Customer[]>(`${this.base}/customers/active`);
+  }
+
+  searchCustomers(q: string): Observable<Customer[]> {
+    return this.http.get<Customer[]>(`${this.base}/customers/search`, {
+      params: new HttpParams().set('q', q)
+    });
+  }
+
+  getCustomer(id: number): Observable<Customer> {
+    return this.http.get<Customer>(`${this.base}/customers/${id}`);
+  }
+
+  createCustomer(data: Partial<Customer>): Observable<Customer> {
+    return this.http.post<Customer>(`${this.base}/customers`, data);
+  }
+
+  updateCustomer(id: number, data: Partial<Customer>): Observable<Customer> {
+    return this.http.put<Customer>(`${this.base}/customers/${id}`, data);
+  }
+
+  deleteCustomer(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/customers/${id}`);
+  }
+
+  // ---- Contacts ----
+  getContacts(customerId?: number, vendorId?: number): Observable<Contact[]> {
+    let params = new HttpParams();
+    if (customerId) params = params.set('customerId', customerId);
+    if (vendorId) params = params.set('vendorId', vendorId);
+    return this.http.get<Contact[]>(`${this.base}/contacts`, { params });
+  }
+
+  createContact(data: Partial<Contact>): Observable<Contact> {
+    return this.http.post<Contact>(`${this.base}/contacts`, data);
+  }
+
+  updateContact(id: number, data: Partial<Contact>): Observable<Contact> {
+    return this.http.put<Contact>(`${this.base}/contacts/${id}`, data);
+  }
+
+  deleteContact(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/contacts/${id}`);
+  }
+
+  // ---- Program Team ----
+  getProjectTeam(projectId: number): Observable<ProgramTeamMember[]> {
+    return this.http.get<ProgramTeamMember[]>(`${this.base}/projects/${projectId}/team`);
+  }
+
+  addProjectTeamMember(projectId: number, userId: number, cftRole: string, isProgramManager = false): Observable<ProgramTeamMember> {
+    const params = new HttpParams()
+      .set('userId', userId)
+      .set('cftRole', cftRole)
+      .set('isProgramManager', isProgramManager);
+    return this.http.post<ProgramTeamMember>(`${this.base}/projects/${projectId}/team`, null, { params });
+  }
+
+  removeProjectTeamMember(projectId: number, userId: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/projects/${projectId}/team/${userId}`);
+  }
+
+  // ---- Milestones ----
+  getProjectMilestones(projectId: number): Observable<ProgramMilestone[]> {
+    return this.http.get<ProgramMilestone[]>(`${this.base}/projects/${projectId}/milestones`);
+  }
+
+  addProjectMilestone(projectId: number, data: Partial<ProgramMilestone>): Observable<ProgramMilestone> {
+    return this.http.post<ProgramMilestone>(`${this.base}/projects/${projectId}/milestones`, data);
+  }
+
+  updateProjectMilestone(projectId: number, milestoneId: number, data: Partial<ProgramMilestone>): Observable<ProgramMilestone> {
+    return this.http.put<ProgramMilestone>(`${this.base}/projects/${projectId}/milestones/${milestoneId}`, data);
+  }
+
+  deleteProjectMilestone(projectId: number, milestoneId: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/projects/${projectId}/milestones/${milestoneId}`);
+  }
+
+  // ---- Customer Reps ----
+  getProjectCustomerReps(projectId: number): Observable<ProgramCustomerRep[]> {
+    return this.http.get<ProgramCustomerRep[]>(`${this.base}/projects/${projectId}/customer-reps`);
+  }
+
+  addProjectCustomerRep(projectId: number, contactId: number, repRole?: string, isPrimary = false): Observable<ProgramCustomerRep> {
+    let params = new HttpParams().set('contactId', contactId).set('isPrimary', isPrimary);
+    if (repRole) params = params.set('repRole', repRole);
+    return this.http.post<ProgramCustomerRep>(`${this.base}/projects/${projectId}/customer-reps`, null, { params });
+  }
+
+  removeProjectCustomerRep(projectId: number, contactId: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/projects/${projectId}/customer-reps/${contactId}`);
+  }
+
+  // ---- Module Permissions ----
+  getModulePermissions(): Observable<ModulePermission[]> {
+    return this.http.get<ModulePermission[]>(`${this.base}/module-permissions`);
+  }
+
+  getPermissionsByRole(roleCode: string): Observable<ModulePermission[]> {
+    return this.http.get<ModulePermission[]>(`${this.base}/module-permissions/role/${roleCode}`);
+  }
+
+  updateModulePermission(id: number, data: Partial<ModulePermission>): Observable<ModulePermission> {
+    return this.http.put<ModulePermission>(`${this.base}/module-permissions/${id}`, data);
   }
 }

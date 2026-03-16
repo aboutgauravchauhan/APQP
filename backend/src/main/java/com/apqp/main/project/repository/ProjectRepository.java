@@ -41,4 +41,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long>, JpaSpec
         WHERE p.riskLevel = 'RED' AND p.status = 'ACTIVE'
         """)
     long countRedRiskActiveProjects();
+
+    @Query("SELECT COUNT(p) FROM Project p WHERE p.projectCode LIKE CONCAT(:prefix, '%')")
+    long countByProjectCodeStartsWith(@Param("prefix") String prefix);
 }
